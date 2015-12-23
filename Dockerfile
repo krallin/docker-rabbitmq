@@ -31,6 +31,6 @@ RUN         chmod a+x /usr/bin/wrapper && apk add --update curl tar gzip bash &&
             openssl x509 -sha1 -req -in server-req.pem -days 10000  -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 > server-cert.pem && \
             mkdir $DATA_DIRECTORY && mv *.pem $DATA_DIRECTORY 
 
-EXPOSE      5761/tcp 15671/tcp
+EXPOSE      15671 5671
 VOLUME      ["$DATA_DIRECTORY"]
 ENTRYPOINT  ["/usr/bin/wrapper"]

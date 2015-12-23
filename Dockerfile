@@ -9,6 +9,9 @@ ENV         RABBITMQ_HOME=/srv/rabbitmq_server-3.5.7 \
             RABBITMQ_LOGS=- \ 
             RABBITMQ_SASL_LOGS=-
 
+COPY        cacert.pem  /ssl/cacert.pem
+COPY        key.pem     /ssl/key.pem
+COPY        cert.pem    /ssl/cert.pem
 COPY        rabbitmq.config /srv/rabbitmq_server-3.5.7/etc/rabbitmq/
 COPY        wrapper.sh /usr/bin/wrapper
 ADD         https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v3_5_7/rabbitmq-server-generic-unix-3.5.7.tar.gz /srv/rabbitmq-server-generic-unix-3.5.7.tar.gz
@@ -25,12 +28,9 @@ RUN         chmod a+x /usr/bin/wrapper && apk add --update curl tar gzip bash &&
             touch /srv/rabbitmq_server-3.5.7/etc/rabbitmq/enabled_plugins && \
             /srv/rabbitmq_server-3.5.7/sbin/rabbitmq-plugins enable --offline rabbitmq_management && \
             apk del --purge tar gzip && \
-            openssl genrsa 2048 > ca-key.pem && \ 
-            openssl req -sha1 -new -x509 -nodes -days 10000 -key ca-key.pem -batch > ca-cert.pem && \
-            openssl req -sha1 -newkey rsa:2048 -days 10000 -nodes -keyout server-key-pkcs-8.pem -batch  > server-req.pem && \
-            openssl x509 -sha1 -req -in server-req.pem -days 10000  -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 > server-cert.pem && \
-            mkdir $DATA_DIRECTORY && mv *.pem $DATA_DIRECTORY 
+            mkdir $DATA_DIRECTORY
 
 EXPOSE      15671 5671
 VOLUME      ["$DATA_DIRECTORY"]
 ENTRYPOINT  ["/usr/bin/wrapper"]
+

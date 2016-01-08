@@ -27,6 +27,7 @@ function generate_self_signed_certs {
     cd ../testca
     openssl ca -config openssl.cnf -in ../server/req.pem -out \
 	        ../server/cert.pem -notext -batch -days 10000 -extensions server_ca_extensions
+
     mv cacert.pem /ssl
     mv ../server/cert.pem /ssl
     mv ../server/key.pem /ssl
@@ -39,16 +40,20 @@ if [[ "$1" == "--initialize" ]]; then
 
     sleep 25
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_user aptible $PASSPHRASE
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_vhost db
+    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_user $USERNAME $PASSPHRASE
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_permissions -p db aptible ".*" ".*" ".*"
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_user_tags aptible administrator
+    # The vhost is equivalent to the "db" in our case
+    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_vhost $DB
+
+    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_permissions -p $DB $USERNAME ".*" ".*" ".*"
+    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_user_tags $USERNAME administrator
 
     ${RABBITMQ_HOME}/sbin/rabbitmqctl delete_user guest
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl delete_vhost /
+
+    ${RABBITMQ_HOME}/sbin/rabbitmqctl stop_app
 else
     echo "Launching RabbitMQ..."
+
     ${RABBITMQ_HOME}/sbin/rabbitmq-server &
 
     # Capture the PID

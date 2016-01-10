@@ -36,25 +36,25 @@ function generate_self_signed_certs {
 if [[ "$1" == "--initialize" ]]; then
     generate_self_signed_certs
 
-    ${RABBITMQ_HOME}/sbin/rabbitmq-server &
+    rabbitmq-server &
 
     sleep 25
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_user $USERNAME $PASSPHRASE
+    rabbitmqctl add_user $USERNAME $PASSPHRASE
 
     # The vhost is equivalent to the "db" in our case
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl add_vhost $DB
+    rabbitmqctl add_vhost $DB
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_permissions -p $DB $USERNAME ".*" ".*" ".*"
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl set_user_tags $USERNAME administrator
+    rabbitmqctl set_permissions -p $DB $USERNAME ".*" ".*" ".*"
+    rabbitmqctl set_user_tags $USERNAME administrator
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl delete_user guest
+    rabbitmqctl delete_user guest
 
-    ${RABBITMQ_HOME}/sbin/rabbitmqctl stop_app
+    rabbitmqctl stop_app
 else
     echo "Launching RabbitMQ..."
 
-    ${RABBITMQ_HOME}/sbin/rabbitmq-server &
+    rabbitmq-server &
 
     # Capture the PID
     rmq_pid=$!

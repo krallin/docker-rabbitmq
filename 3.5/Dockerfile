@@ -28,7 +28,7 @@ RUN         mkdir /srv && apk add --update curl tar gzip bash && \
 
 COPY        openssl.cnf /ssl/testca/openssl.cnf
 COPY        rabbitmq.config /srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/
-COPY        wrapper.sh /usr/bin/wrapper
+COPY        run-database.sh /usr/bin/wrapper
 COPY        rabbitmqadmin /usr/local/bin/rabbitmqadmin
 COPY        rabbitmqadmin.conf /usr/local/bin/rabbitmqadmin.conf
 

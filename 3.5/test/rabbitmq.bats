@@ -11,7 +11,7 @@ setup() {
 
   sleep 25
 
-  ${RABBITMQ_HOME}/sbin/rabbitmq-server > /dev/null 2>&1 &
+  rabbitmq-server > /dev/null 2>&1 &
 
   export SCRIPT_PID=$!
 
@@ -19,8 +19,8 @@ setup() {
 }
 
 teardown() {
-  ${RABBITMQ_HOME}/sbin/rabbitmqctl stop_app  > /dev/null 2>&1
-  ${RABBITMQ_HOME}/sbin/rabbitmqctl reset  > /dev/null 2>&1
+  rabbitmqctl stop_app  > /dev/null 2>&1
+  rabbitmqctl reset  > /dev/null 2>&1
 
   pkill -P $SCRIPT_PID
 

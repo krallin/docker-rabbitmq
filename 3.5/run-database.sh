@@ -51,6 +51,8 @@ if [[ "$1" == "--initialize" ]]; then
     rabbitmqctl delete_user guest
 
     rabbitmqctl stop_app
+elif [[ "$1" == "--client" ]]; then
+    echo "This image does not support the --client option. Use rabbitmqadmin instead." && exit 1
 else
     echo "Launching RabbitMQ..."
 

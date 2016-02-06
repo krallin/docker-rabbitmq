@@ -14,5 +14,5 @@ if [ "$TRAVIS_BRANCH" == "master" ]; then
 
   #TODO: Once we actually have multiple version to support, we will need a strategy
   #      to figure out how we will build multiple versions from different branches.
-  docker push quay.io/aptible/docker-rabbitmq:3.5
+  docker push quay.io/aptible/rabbitmq:3.5
 fi

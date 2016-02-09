@@ -8,7 +8,10 @@ set -e
 
 function generate_self_signed_certs {
     echo "Generating certificates"
-    cd /ssl/testca
+
+    cp -r /ssl/testca /var/db/testca
+    cd /var/db/testca
+
     mkdir certs private
     chmod 700 private
     echo 01 > serial
@@ -28,9 +31,9 @@ function generate_self_signed_certs {
     openssl ca -config openssl.cnf -in ../server/req.pem -out \
 	        ../server/cert.pem -notext -batch -days 10000 -extensions server_ca_extensions
 
-    mv cacert.pem /ssl
-    mv ../server/cert.pem /ssl
-    mv ../server/key.pem /ssl
+    ln -s /var/db/testca/cacert.pem /ssl/cacert.pem
+    ln -s /var/db/server/cert.pem /ssl/cert.pem
+    ln -s /var/db/server/key.pem /ssl/key.pem
 }
 
 if [[ "$1" == "--initialize" ]]; then

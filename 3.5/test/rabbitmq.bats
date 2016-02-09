@@ -7,7 +7,7 @@ setup() {
   mkdir "$RABBITMQ_MNESIA_BASE"
   cp -r /ssl /ssl-old
 
-  USERNAME=user PASSPHRASE=pass DB=db /usr/bin/wrapper --initialize  > /dev/null 2>&1
+  USERNAME=user PASSPHRASE=pass DATABASE=db /usr/bin/wrapper --initialize  > /dev/null 2>&1
 
   sleep 25
 

@@ -43,9 +43,9 @@ if [[ "$1" == "--initialize" ]]; then
     rabbitmqctl add_user $USERNAME $PASSPHRASE
 
     # The vhost is equivalent to the "db" in our case
-    rabbitmqctl add_vhost $DB
+    rabbitmqctl add_vhost $DATABASE
 
-    rabbitmqctl set_permissions -p $DB $USERNAME ".*" ".*" ".*"
+    rabbitmqctl set_permissions -p $DATABASE $USERNAME ".*" ".*" ".*"
     rabbitmqctl set_user_tags $USERNAME administrator
 
     rabbitmqctl delete_user guest

@@ -7,7 +7,7 @@ setup() {
   mkdir "$RABBITMQ_MNESIA_BASE"
   cp -r /ssl /ssl-old
 
-  USERNAME=user PASSPHRASE=pass DATABASE=db /usr/bin/wrapper --initialize  > /dev/null 2>&1
+  USERNAME=user PASSPHRASE=pass DATABASE=db /usr/bin/wrapper --initialize > /dev/null 2>&1
 
   sleep 25
 
@@ -26,9 +26,13 @@ teardown() {
 
   wait $SCRIPT_PID
 
+  rm /ssl/cacert.pem
+  rm /ssl/cert.pem
+  rm /ssl/key.pem
+
+  rm -rf /var/db/testca
+  rm -rf /var/db/server
   rm -rf "$RABBITMQ_MNESIA_BASE"
-  rm -rf /ssl
-  mv /ssl-old /ssl
   export RABBITMQ_MNESIA_BASE="$OLD_RABBITMQ_MNESIA_BASE"
   unset OLD_RABBITMQ_MNESIA_BASE
 }

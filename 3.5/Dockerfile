@@ -33,7 +33,10 @@ COPY        rabbitmqadmin /usr/local/bin/rabbitmqadmin
 COPY        rabbitmqadmin.conf /usr/local/bin/rabbitmqadmin.conf
 
 ADD         test /tmp/test
-RUN         chmod a+x /usr/bin/wrapper /usr/local/bin/rabbitmqadmin && \
+RUN         ln -s /var/db/testca/cacert.pem /ssl/cacert.pem && \
+            ln -s /var/db/server/cert.pem /ssl/cert.pem && \
+            ln -s /var/db/server/key.pem /ssl/key.pem && \
+            chmod a+x /usr/bin/wrapper /usr/local/bin/rabbitmqadmin && \
             bats --tap /tmp/test && apk del --purge python
 EXPOSE      15671 5671
 VOLUME      ["$DATA_DIRECTORY"]

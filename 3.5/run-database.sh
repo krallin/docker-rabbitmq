@@ -30,10 +30,6 @@ function generate_self_signed_certs {
     cd ../testca
     openssl ca -config openssl.cnf -in ../server/req.pem -out \
 	        ../server/cert.pem -notext -batch -days 10000 -extensions server_ca_extensions
-
-    ln -s /var/db/testca/cacert.pem /ssl/cacert.pem
-    ln -s /var/db/server/cert.pem /ssl/cert.pem
-    ln -s /var/db/server/key.pem /ssl/key.pem
 }
 
 if [[ "$1" == "--initialize" ]]; then

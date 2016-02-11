@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy to staging on master merges (not PRs)
+# Deploy to quay.io on master merges (not PRs)
 
 set -e
 
@@ -9,10 +9,8 @@ if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
 fi
 
 if [ "$TRAVIS_BRANCH" == "master" ]; then
-  # Deploy to staging on a merge to master
+  # Deploy to quay.io on a merge to master
   docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
-
-  #TODO: Once we actually have multiple version to support, we will need a strategy
-  #      to figure out how we will build multiple versions from different branches.
+  docker push quay.io/aptible/rabbitmq:latest
   docker push quay.io/aptible/rabbitmq:3.5
 fi

@@ -36,7 +36,8 @@ RUN         ln -s /var/db/testca/cacert.pem /ssl/cacert.pem && \
             ln -s /var/db/server/key.pem /ssl/key.pem && \
             chmod a+x /usr/bin/wrapper /usr/local/bin/rabbitmqadmin /usr/bin/initialize-certs && \
             bats --tap /tmp/test && apk del --purge python
-EXPOSE      15671 5671
+# TODO: EXPOSE 15671 as well when Sweetness supports exposing multiple ports
+EXPOSE      5671
 VOLUME      ["$DATA_DIRECTORY"]
 ENTRYPOINT  ["/usr/bin/wrapper"]
 

@@ -1,16 +1,16 @@
-FROM        quay.io/aptible/alpine 
+FROM        quay.io/aptible/alpine:3.4
 
-ENV         RABBITMQ_VERSION=3.5.7 \
+ENV         RABBITMQ_VERSION=<%= ENV.fetch 'RABBITMQ_VERSION' %> \
             RABBITMQ_MNESIA_BASE=/var/db/rabbitmq \
             DATA_DIRECTORY=/var/db \
-            RABBITMQ_LOGS=- \ 
+            RABBITMQ_LOGS=- \
             RABBITMQ_SASL_LOGS=-
 ENV         RABBITMQ_HOME=/srv/rabbitmq_server-${RABBITMQ_VERSION} \
             PLUGINS_DIR=/srv/rabbitmq_server-${RABBITMQ_VERSION}/plugins \
             ENABLED_PLUGINS_FILE=/srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/enabled_plugins
 ENV         PATH=$RABBITMQ_HOME/sbin:$PATH
 
-RUN         mkdir /srv && apk add --update curl tar gzip bash && \
+RUN         mkdir -p /srv && apk add --update curl tar gzip bash openssl && \
             curl -Lk "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" > /srv/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
             apk upgrade --update-cache && \
             apk add python erlang erlang erlang-mnesia erlang-public-key erlang-crypto erlang-ssl \

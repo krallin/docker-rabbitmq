@@ -1,10 +1,22 @@
 #!/bin/bash
+set -o errexit
 
-# When this exits, exit all back ground process also.
-trap 'kill $(jobs -p)' EXIT
+# TODO: Remove
+set -o xtrace
 
-# Die on error
-set -e
+wait_for_rabbitmq() {
+  for _ in $(seq 1 25); do
+    if rabbitmqctl -q status 2>/dev/null | grep -q 'rabbit'; then
+      return 0
+    fi
+
+    echo "Waiting for RabbitMQ to come up..."
+    sleep 1
+  done
+
+  echo "RabbitMQ admin did not come online!"
+  return 1
+}
 
 function generate_self_signed_certs {
     echo "Generating certificates"
@@ -26,44 +38,38 @@ function generate_self_signed_certs {
     cd server
     openssl genrsa -out key.pem 2048
     openssl req -new -key key.pem -out req.pem -days 10000 -outform PEM \
-	        -subj /CN=$(hostname)/O=server/ -nodes -batch
+      -subj "/CN=$(hostname)/O=server/" -nodes -batch
     cd ../testca
     openssl ca -config openssl.cnf -in ../server/req.pem -out \
-	        ../server/cert.pem -notext -batch -days 10000 -extensions server_ca_extensions
+      ../server/cert.pem -notext -batch -days 10000 -extensions server_ca_extensions
 }
 
 if [[ "$1" == "--initialize" ]]; then
     generate_self_signed_certs
 
     rabbitmq-server &
+    rmq_pid="$!"
 
-    sleep 25
+    # NOTE: We'd love to use `rabbitmqctl wait` here, but it does not actually
+    # work.
+    wait_for_rabbitmq
 
-    rabbitmqctl add_user $USERNAME $PASSPHRASE
+    rabbitmqctl add_user "$USERNAME" "$PASSPHRASE"
 
     # The vhost is equivalent to the "db" in our case
-    rabbitmqctl add_vhost $DATABASE
+    rabbitmqctl add_vhost "$DATABASE"
 
-    rabbitmqctl set_permissions -p $DATABASE $USERNAME ".*" ".*" ".*"
-    rabbitmqctl set_user_tags $USERNAME administrator
+    rabbitmqctl set_permissions -p "$DATABASE" "$USERNAME" ".*" ".*" ".*"
+    rabbitmqctl set_user_tags "$USERNAME" administrator
 
     rabbitmqctl delete_user guest
 
-    rabbitmqctl stop_app
+    echo "Waiting for RabbitMQ to exit..."
+    pkill -TERM -P "$rmq_pid"
+    wait "$rmq_pid" || true
 elif [[ "$1" == "--client" ]]; then
     echo "This image does not support the --client option. Use rabbitmqadmin instead." && exit 1
 else
-    echo "Launching RabbitMQ..."
-
-    rabbitmq-server &
-
-    # Capture the PID
-    rmq_pid=$!
-
-    # Tail the logs, but continue on to the wait command
-    echo -e "\n\nTailing log output:"
-
-    # If RMQ dies, this script dies
-    wait $rmq_pid
+  echo "Launching RabbitMQ..."
+  exec rabbitmq-server
 fi
-

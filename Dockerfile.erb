@@ -1,23 +1,19 @@
-FROM        quay.io/aptible/alpine 
+FROM        quay.io/aptible/alpine:3.4
 
-ENV         RABBITMQ_VERSION=3.5.7 \
+ENV         RABBITMQ_VERSION=<%= ENV.fetch 'RABBITMQ_VERSION' %> \
             RABBITMQ_MNESIA_BASE=/var/db/rabbitmq \
             DATA_DIRECTORY=/var/db \
-            RABBITMQ_LOGS=- \ 
+            RABBITMQ_LOGS=- \
             RABBITMQ_SASL_LOGS=-
 ENV         RABBITMQ_HOME=/srv/rabbitmq_server-${RABBITMQ_VERSION} \
             PLUGINS_DIR=/srv/rabbitmq_server-${RABBITMQ_VERSION}/plugins \
             ENABLED_PLUGINS_FILE=/srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/enabled_plugins
 ENV         PATH=$RABBITMQ_HOME/sbin:$PATH
 
-RUN         mkdir /srv && apk add --update curl tar gzip bash && \
-            curl -Lk "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" > /srv/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
-            echo "http://dl-4.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
-            echo "http://dl-4.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
-            echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
-            apk add python erlang erlang erlang-mnesia erlang-public-key erlang-crypto erlang-ssl \
-                erlang-sasl erlang-asn1 erlang-inets erlang-os-mon erlang-xmerl erlang-eldap \
-                --update-cache --allow-untrusted && \
+RUN         mkdir -p /srv && apk-install curl tar gzip bash && \
+            curl -fsL "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" > /srv/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
+            apk-install python openssl erlang erlang erlang-mnesia erlang-public-key erlang-crypto erlang-ssl \
+                erlang-sasl erlang-asn1 erlang-inets erlang-os-mon erlang-xmerl erlang-eldap && \
             cd /srv && \
             tar -xzvf rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
             rm -f rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
@@ -32,13 +28,12 @@ COPY        run-database.sh /usr/bin/wrapper
 COPY        rabbitmqadmin /usr/local/bin/rabbitmqadmin
 COPY        rabbitmqadmin.conf /usr/local/bin/rabbitmqadmin.conf
 
-ADD         test /tmp/test
 RUN         ln -s /var/db/testca/cacert.pem /ssl/cacert.pem && \
             ln -s /var/db/server/cert.pem /ssl/cert.pem && \
-            ln -s /var/db/server/key.pem /ssl/key.pem && \
-            chmod a+x /usr/bin/wrapper /usr/local/bin/rabbitmqadmin && \
-            bats --tap /tmp/test && apk del --purge python
+            ln -s /var/db/server/key.pem /ssl/key.pem
+
+ADD         test /tmp/test
+RUN         bats --tap /tmp/test && apk del --purge python
 EXPOSE      15671 5671
 VOLUME      ["$DATA_DIRECTORY"]
 ENTRYPOINT  ["/usr/bin/wrapper"]
-

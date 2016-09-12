@@ -1,0 +1,1 @@
+export RABBITMQ_VERSION = 3.5.7

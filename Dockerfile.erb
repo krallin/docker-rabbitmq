@@ -1,0 +1,43 @@
+FROM        quay.io/aptible/alpine:3.4
+
+ENV         RABBITMQ_VERSION=<%= ENV.fetch 'RABBITMQ_VERSION' %> \
+            RABBITMQ_MNESIA_BASE=/var/db/rabbitmq \
+            DATA_DIRECTORY=/var/db \
+            RABBITMQ_LOGS=- \
+            RABBITMQ_SASL_LOGS=-
+ENV         RABBITMQ_HOME=/srv/rabbitmq_server-${RABBITMQ_VERSION} \
+            PLUGINS_DIR=/srv/rabbitmq_server-${RABBITMQ_VERSION}/plugins \
+            ENABLED_PLUGINS_FILE=/srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/enabled_plugins
+ENV         PATH=$RABBITMQ_HOME/sbin:$PATH
+
+RUN         mkdir -p /srv && \
+            apk-install curl tar gzip bash openssl && \
+            curl -fsSL "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" -o "/srv/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" && \
+            apk-install python erlang erlang erlang-mnesia erlang-public-key erlang-crypto erlang-ssl \
+                        erlang-sasl erlang-asn1 erlang-inets erlang-os-mon erlang-xmerl erlang-eldap && \
+            cd /srv && \
+            tar -xzvf rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
+            rm -f rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
+            touch /srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/enabled_plugins && \
+            /srv/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-plugins enable --offline rabbitmq_management && \
+            apk del --purge tar gzip && \
+            mkdir $DATA_DIRECTORY
+
+COPY        etc/openssl.cnf /ssl/testca/openssl.cnf
+COPY        etc/rabbitmq.config /srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/
+COPY        etc/rabbitmqadmin.conf /usr/local/bin/rabbitmqadmin.conf
+COPY        bin/run-database.sh /usr/bin/wrapper
+COPY        bin/initialize-certs.sh /usr/bin/initialize-certs
+COPY        bin/rabbitmqadmin /usr/local/bin/rabbitmqadmin
+
+RUN         ln -s /var/db/testca/cacert.pem /ssl/cacert.pem && \
+            ln -s /var/db/server/cert.pem /ssl/cert.pem && \
+            ln -s /var/db/server/key.pem /ssl/key.pem
+
+ADD         test /tmp/test
+RUN         bats --tap /tmp/test && apk del --purge python
+
+# TODO: EXPOSE 15671 as well when Sweetness supports exposing multiple ports
+EXPOSE      5671
+VOLUME      ["$DATA_DIRECTORY"]
+ENTRYPOINT  ["/usr/bin/wrapper"]

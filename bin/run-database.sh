@@ -1,17 +1,25 @@
 #!/bin/bash
 set -o errexit
 
-wait_for_rabbitmq() {
-  for _ in $(seq 1 25); do
-    if rabbitmqctl -q status 2>/dev/null | grep -q 'rabbit'; then
+with_retry () {
+  # When RabbitMQ is just booting up, it might be impossible to e.g. create a
+  # new user because no worker is available to service our request (the error
+  # looks like `noproc,{gen_server2,call ...}`). Even if we wait until RabbitMQ
+  # appears to be online (i.e. it shows in rabbitmqctl's status output), we can
+  # stil run into an error while adding the user. So, we just retry a lot!
+  local n=30
+  local d=2
+
+  for _ in $(seq 1 "$n"); do
+    if "$@"; then
       return 0
     fi
 
-    echo "Waiting for RabbitMQ to come up..."
-    sleep 1
+    echo "Errored (may retry in ${d}): ${*}"
+    sleep "$d"
   done
 
-  echo "RabbitMQ admin did not come online!"
+  echo "Failed permanently after ${n} attempts: ${*}"
   return 1
 }
 
@@ -21,19 +29,15 @@ if [[ "$1" == "--initialize" ]]; then
     rabbitmq-server &
     rmq_pid="$!"
 
-    # NOTE: We'd love to use `rabbitmqctl wait` here, but it does not actually
-    # work.
-    wait_for_rabbitmq
-
-    rabbitmqctl add_user "$USERNAME" "$PASSPHRASE"
+    with_retry rabbitmqctl add_user "$USERNAME" "$PASSPHRASE"
 
     # The vhost is equivalent to the "db" in our case
-    rabbitmqctl add_vhost "$DATABASE"
+    with_retry rabbitmqctl add_vhost "$DATABASE"
 
-    rabbitmqctl set_permissions -p "$DATABASE" "$USERNAME" ".*" ".*" ".*"
-    rabbitmqctl set_user_tags "$USERNAME" administrator
+    with_retry rabbitmqctl set_permissions -p "$DATABASE" "$USERNAME" ".*" ".*" ".*"
+    with_retry rabbitmqctl set_user_tags "$USERNAME" administrator
 
-    rabbitmqctl delete_user guest
+    with_retry rabbitmqctl delete_user guest
 
     echo "Waiting for RabbitMQ to exit..."
     pkill -TERM -P "$rmq_pid"

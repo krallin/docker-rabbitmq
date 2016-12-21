@@ -98,7 +98,7 @@ teardown() {
     curl -kv https://localhost:5671 2>&1 | grep $name
 }
 
-@test "It should prioritize ssl cert / key files from the environment" {
+@test "It should use certificates from the environment" {
     /usr/bin/initialize-certs bats-test | grep "Generating certificate with name bats-test"
     export SSL_CERTIFICATE="$(cat "/var/db/server/cert.pem")"
     export SSL_KEY="$(cat "/var/db/server/key.pem")"
@@ -109,9 +109,31 @@ teardown() {
     curl -kv https://localhost:5671 2>&1 | grep bats-test
 }
 
-@test "It should reuse existing ssl cert / key files" {
+@test "It should use certificates from the filesystem" {
     /usr/bin/initialize-certs bats-test | grep "Generating certificate with name bats-test"
     initialize_rabbitmq | grep "Certs present on filesystem - using them"
     run_rabbitmq
     curl -kv https://localhost:5671 2>&1 | grep bats-test
+}
+
+@test "It should prefer certificates from the environment" {
+  /usr/bin/initialize-certs test-old
+  OLD_SSL_CERTIFICATE="$(cat "/var/db/server/cert.pem")"
+  OLD_SSL_KEY="$(cat "/var/db/server/key.pem")"
+  rm -rf /var/db/testca
+  rm -rf /var/db/server
+
+  /usr/bin/initialize-certs test-new
+  NEW_SSL_CERTIFICATE="$(cat "/var/db/server/cert.pem")"
+  NEW_SSL_KEY="$(cat "/var/db/server/key.pem")"
+  rm -rf /var/db/testca
+  rm -rf /var/db/server
+
+  SSL_CERTIFICATE="$OLD_SSL_CERTIFICATE" SSL_KEY="$OLD_SSL_KEY" \
+    initialize_rabbitmq
+
+  SSL_CERTIFICATE="$NEW_SSL_CERTIFICATE" SSL_KEY="$NEW_SSL_KEY" \
+    run_rabbitmq
+
+  curl -kv https://localhost:5671 2>&1 | grep test-new
 }

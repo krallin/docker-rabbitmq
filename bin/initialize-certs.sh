@@ -4,9 +4,7 @@ ssl_directory="/var/db/server"
 ssl_cert_file="${ssl_directory}/cert.pem"
 ssl_key_file="${ssl_directory}/key.pem"
 
-if [ -f "$ssl_cert_file" ] && [ -f "$ssl_key_file" ]; then
-    echo "Certs present on filesystem - using them"
-elif [ -n "$SSL_CERTIFICATE" ] && [ -n "$SSL_KEY" ]; then
+if [ -n "$SSL_CERTIFICATE" ] && [ -n "$SSL_KEY" ]; then
     echo "Taking certificate from environment"
     echo -e "$SSL_KEY" > key.pem
     echo -e "$SSL_CERTIFICATE" > cert.pem
@@ -17,6 +15,8 @@ elif [ -n "$SSL_CERTIFICATE" ] && [ -n "$SSL_KEY" ]; then
     mv key.pem $ssl_directory
     mv cert.pem $ssl_directory
     mv cacert.pem /var/db/testca
+elif [ -f "$ssl_cert_file" ] && [ -f "$ssl_key_file" ]; then
+    echo "Certs present on filesystem - using them"
 else
     [[ -n $1 ]] && name="$1" || name=$(hostname)
 

@@ -35,6 +35,15 @@ COPY        bin/run-database.sh /usr/bin/wrapper
 COPY        bin/initialize-certs.sh /usr/bin/initialize-certs
 COPY        bin/rabbitmqadmin /usr/local/bin/rabbitmqadmin
 
+RUN         VERSION="<%= ENV.fetch 'DELAYED_MESSAGE_EXCHANGE_VERSION' %>" \
+         && SHA1SUM="<%= ENV.fetch 'DELAYED_MESSAGE_EXCHANGE_SHA1SUM' %>" \
+         && PLUGINS="<%= ENV.fetch 'RABBITMQ_PLUGINS' %>" \
+         && ARCHIVE="rabbitmq_delayed_message_exchange-${VERSION}.ez" \
+         && curl -fsSL "http://www.rabbitmq.com/community-plugins/v${PLUGINS}/${ARCHIVE}" -o "$ARCHIVE" \
+         && echo "${SHA1SUM}  ${ARCHIVE}" | sha1sum -c - \
+         && mv "$ARCHIVE" "/srv/rabbitmq_server-${RABBITMQ_VERSION}/plugins/" \
+         && rabbitmq-plugins enable --offline rabbitmq_delayed_message_exchange
+
 RUN         ln -s /var/db/testca/cacert.pem /ssl/cacert.pem && \
             ln -s /var/db/server/cert.pem /ssl/cert.pem && \
             ln -s /var/db/server/key.pem /ssl/key.pem

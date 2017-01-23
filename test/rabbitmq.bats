@@ -15,7 +15,7 @@ wait_until_epmd_exits() {
   # Force shutdown the Erlang application server, regardless of whether it was
   # started.
   for _ in $(seq 1 60); do
-    if epmd -kill 2>&1 | grep -qi "killed"; then
+    if epmd -kill 2>&1 | grep -qiE "(killed|cannot connect)"; then
       return 0
     fi
     sleep 1
@@ -136,4 +136,18 @@ teardown() {
     run_rabbitmq
 
   curl -kv https://localhost:5671 2>&1 | grep test-new
+}
+
+@test "It generates valid JSON for --discover" {
+  wrapper --discover | python -c 'import sys, json; json.load(sys.stdin)'
+}
+
+@test "It generates valid JSON for --connection-url" {
+  USERNAME="foo" \
+  PASSPHRASE="bar" \
+  EXPOSE_HOST="qux.com" \
+  EXPOSE_PORT_5671=123 \
+  EXPOSE_PORT_15671=456 \
+  DATABASE=db \
+    wrapper --connection-url | python -c 'import sys, json; json.load(sys.stdin)'
 }

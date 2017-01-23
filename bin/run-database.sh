@@ -66,6 +66,11 @@ elif [[ "$1" == "--connection-url" ]]; then
     {
         "type": "management",
         "default": false,
+        "connection_url": "https://${USERNAME}:${PASSPHRASE}@${EXPOSE_HOST}:${EXPOSE_PORT_15671}"
+    },
+    {
+        "type": "management-api",
+        "default": false,
         "connection_url": "https://${USERNAME}:${PASSPHRASE}@${EXPOSE_HOST}:${EXPOSE_PORT_15671}/api/vhosts/${DATABASE}"
     }
   ]

@@ -1,6 +1,7 @@
 FROM        quay.io/aptible/alpine:3.4
 
 ENV         RABBITMQ_VERSION=<%= ENV.fetch 'RABBITMQ_VERSION' %> \
+            RABBITMQ_SHA1SUM=<%= ENV.fetch 'RABBITMQ_SHA1SUM' %> \
             RABBITMQ_MNESIA_BASE=/var/db/rabbitmq \
             DATA_DIRECTORY=/var/db \
             RABBITMQ_LOGS=- \
@@ -11,20 +12,24 @@ ENV         RABBITMQ_HOME=/srv/rabbitmq_server-${RABBITMQ_VERSION} \
 ENV         PATH=$RABBITMQ_HOME/sbin:$PATH
 
 RUN         mkdir -p /srv && \
+            cd /srv && \
+            ARCHIVE="rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" && \
             apk-install curl tar gzip bash openssl pwgen && \
-            curl -fsSL "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" -o "/srv/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz" && \
+            curl \
+              -fsSL "https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v${RABBITMQ_VERSION//\./_}/${ARCHIVE}" \
+              -o "$ARCHIVE" && \
+            echo "${RABBITMQ_SHA1SUM}  ${ARCHIVE}" | sha1sum -c - && \
             apk-install python erlang erlang erlang-mnesia erlang-public-key erlang-crypto erlang-ssl \
                         erlang-sasl erlang-asn1 erlang-inets erlang-os-mon erlang-xmerl erlang-eldap && \
-            cd /srv && \
-            tar -xzvf rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
-            rm -f rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.gz && \
-            touch /srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/enabled_plugins && \
-            /srv/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-plugins enable --offline rabbitmq_management && \
+            tar -xzvf "$ARCHIVE" && \
+            rm -f "$ARCHIVE" && \
+            touch "${RABBITMQ_HOME}/etc/rabbitmq/enabled_plugins" && \
+            "${RABBITMQ_HOME}/sbin/rabbitmq-plugins" enable --offline rabbitmq_management && \
             apk del --purge tar gzip && \
-            mkdir $DATA_DIRECTORY
+            mkdir "$DATA_DIRECTORY"
 
 COPY        etc/openssl.cnf /ssl/testca/openssl.cnf
-COPY        etc/rabbitmq.config /srv/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/
+COPY        etc/rabbitmq.config "${RABBITMQ_HOME}/etc/rabbitmq/"
 COPY        etc/rabbitmqadmin.conf /usr/local/bin/rabbitmqadmin.conf
 COPY        bin/run-database.sh /usr/bin/wrapper
 COPY        bin/initialize-certs.sh /usr/bin/initialize-certs

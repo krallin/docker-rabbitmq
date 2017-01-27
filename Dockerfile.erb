@@ -25,6 +25,8 @@ RUN         mkdir -p /srv && \
             rm -f "$ARCHIVE" && \
             touch "${RABBITMQ_HOME}/etc/rabbitmq/enabled_plugins" && \
             "${RABBITMQ_HOME}/sbin/rabbitmq-plugins" enable --offline rabbitmq_management && \
+            "${RABBITMQ_HOME}/sbin/rabbitmq-plugins" enable --offline rabbitmq_shovel && \
+            "${RABBITMQ_HOME}/sbin/rabbitmq-plugins" enable --offline rabbitmq_shovel_management && \
             apk del --purge tar gzip && \
             mkdir "$DATA_DIRECTORY"
 

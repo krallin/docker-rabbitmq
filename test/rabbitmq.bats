@@ -151,3 +151,10 @@ teardown() {
   DATABASE=db \
     wrapper --connection-url | python -c 'import sys, json; json.load(sys.stdin)'
 }
+
+@test "It should delete the guest user and create a user" {
+    initialize_rabbitmq
+    run_rabbitmq
+    ! rabbitmqadmin -c /usr/local/bin/rabbitmqadmin.conf list users | grep -q guest
+    rabbitmqadmin -c /usr/local/bin/rabbitmqadmin.conf list users | grep -q user
+}

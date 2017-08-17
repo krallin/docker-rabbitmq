@@ -23,6 +23,26 @@ with_retry () {
   return 1
 }
 
+delete_user_if_exists () {
+  local user="$1"
+
+  if rabbitmqctl delete_user "$user"; then
+    # Deletion succeeded. We're done here.
+    return 0
+  else
+    # Deletion failed. Check that we can successfully list users, and if so
+    # then check that the user we meant to delete is absent from the list.
+    local userList
+    userList="$(rabbitmqctl list_users)"
+    if ! echo "$userList" | grep "$user"; then
+      echo "user $user was already deleted"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
 if [[ "$1" == "--initialize" ]]; then
     /usr/bin/initialize-certs
 
@@ -37,7 +57,7 @@ if [[ "$1" == "--initialize" ]]; then
     with_retry rabbitmqctl set_permissions -p "$DATABASE" "$USERNAME" ".*" ".*" ".*"
     with_retry rabbitmqctl set_user_tags "$USERNAME" administrator
 
-    with_retry rabbitmqctl delete_user guest
+    with_retry delete_user_if_exists guest
 
     echo "Waiting for RabbitMQ to exit..."
     pkill -TERM -P "$rmq_pid"

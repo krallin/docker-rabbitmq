@@ -34,8 +34,45 @@ delete_user_if_exists () {
     # then check that the user we meant to delete is absent from the list.
     local userList
     userList="$(rabbitmqctl list_users)"
-    if ! echo "$userList" | grep "$user"; then
+    if ! echo "$userList" | grep -E "^$user"; then
       echo "user $user was already deleted"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+add_user_if_not_exists () {
+  # See above for the logic here
+  local user="$1"
+  local pass="$2"
+
+  if rabbitmqctl add_user "$user" "$pass"; then
+    return 0
+  else
+    local userList
+    userList="$(rabbitmqctl list_users)"
+    if echo "$userList" | grep -E "^$user"; then
+      echo "user $user was already added"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+add_vhost_if_not_exists () {
+  # See above for the logic here
+  local vhost="$1"
+
+  if rabbitmqctl add_vhost "$vhost"; then
+    return 0
+  else
+    local vhostList
+    vhostList="$(rabbitmqctl list_vhosts)"
+    if echo "$vhostList" | grep -E "^$vhost"; then
+      echo "vhost $vhost was already added"
       return 0
     fi
   fi
@@ -49,15 +86,12 @@ if [[ "$1" == "--initialize" ]]; then
     rabbitmq-server &
     rmq_pid="$!"
 
-    with_retry rabbitmqctl add_user "$USERNAME" "$PASSPHRASE"
-
-    # The vhost is equivalent to the "db" in our case
-    with_retry rabbitmqctl add_vhost "$DATABASE"
+    with_retry add_user_if_not_exists "$USERNAME" "$PASSPHRASE"
+    with_retry add_vhost_if_not_exists "$DATABASE"
+    with_retry delete_user_if_exists guest
 
     with_retry rabbitmqctl set_permissions -p "$DATABASE" "$USERNAME" ".*" ".*" ".*"
     with_retry rabbitmqctl set_user_tags "$USERNAME" administrator
-
-    with_retry delete_user_if_exists guest
 
     echo "Waiting for RabbitMQ to exit..."
     pkill -TERM -P "$rmq_pid"
